@@ -1,0 +1,21 @@
+#ifndef LORA_RECEIVER_CONFIG_H
+#define LORA_RECEIVER_CONFIG_H
+
+#define RFM95_INT 2
+#define RFM95_RST 5
+#define RFM95_CS 6
+#define RF95_FREQ 915.0
+
+#define TO485_RX 9
+#define TO485_TX 7
+#define RS485_TRANS 8
+
+#define BLUE_LED A0
+#define PWD_LED A1
+
+enum LORA_MODE_ENUM {
+  LORA_MODE_TRANSMITTER = 0,
+  LORA_MODE_RECEIVER = 1
+};
+
+#endif

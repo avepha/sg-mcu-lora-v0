@@ -25,6 +25,7 @@ void setLoRaMode(LORA_MODE_ENUM mode) {
         digitalWrite(RS485_TRANS, HIGH); // set rs485 as transmitter
         delay(10);
       }
+      break;
     }
     case LORA_MODE_RECEIVER: {
       if (loraModeEnum != LORA_MODE_RECEIVER) {
@@ -32,6 +33,7 @@ void setLoRaMode(LORA_MODE_ENUM mode) {
         digitalWrite(RS485_TRANS, LOW); // set rs485 as receiver
         delay(10);
       }
+      break;
     }
   }
 
@@ -88,6 +90,7 @@ void loop() {
   delay(1000);
 #else
   if (rf95.available()) {
+    setLoRaMode(LORA_MODE_RECEIVER);
     uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
     uint8_t len = sizeof(buf);
 
@@ -106,32 +109,47 @@ void loop() {
   if (to485.available()) {
     byte raw[64];
     int readIndex = 0;
-    while (to485.read() == 0xEE) {
-      raw[readIndex++] = 0xEE;
-      int loop = 0;
-      while (to485.available()) {
-        if (to485.available()) {
-          byte byteVal = to485.read();
-          raw[readIndex++] = byteVal;
-          if (byteVal == 0xEF) {
-            setLoRaMode(LORA_MODE_TRANSMITTER);
+    while (to485.available()) {
+      if (to485.read() == 0xEE) {
+        raw[readIndex++] = 0xEE;
+        int loop = 0;
+        while (true) {
+          if (to485.available()) {
+            byte byteVal = to485.read();
 
-            rf95.send(raw, readIndex);
-            for (int i = 0; i < 2; i++) blinkLedBlue(30);
-            rf95.waitPacketSent();
-            return;
+            if (byteVal == 0xEF) {
+              raw[readIndex++] = 0xEF;
+              Serial.print("RS485 Packet: ");
+              for (int i = 0; i < readIndex; i++) {
+                Serial.print(raw[i], HEX); Serial.print(" ");
+              }
+              Serial.println();
+
+              Serial.print("Sending Packet...");
+              setLoRaMode(LORA_MODE_TRANSMITTER);
+              rf95.send(raw, readIndex);
+              for (int i = 0 ; i < 2; i++) blinkLedBlue(30);
+              rf95.waitPacketSent();
+              setLoRaMode(LORA_MODE_RECEIVER);
+              Serial.println("Success!");
+              return;
+            }
+            else {
+              raw[readIndex++] = byteVal;
+            }
+            loop = 0; // reset counter when data is coming
           }
-          loop = 0; // reset counter when data is coming
-        }
-        else {
-          // ensure this process can not hold resource for more than 50ms
-          loop++;
-          delay(1);
-          if (loop >= 50) return; // timeout
+          else {
+            // ensure this process can not hold resource more than 50ms
+            loop++;
+            delay(1);
+            if (loop >= 50) return;
+          }
         }
       }
     }
   }
-  delay(10);
+
+  delay(100);
 #endif
 }

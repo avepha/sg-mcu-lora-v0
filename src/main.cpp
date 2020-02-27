@@ -110,15 +110,15 @@ void loop() {
     byte raw[64];
     int readIndex = 0;
     while (to485.available()) {
-      if (to485.read() == 0xEE) {
-        raw[readIndex++] = 0xEE;
+      if (to485.read() == '{') {
+        raw[readIndex++] = '{';
         int loop = 0;
         while (true) {
           if (to485.available()) {
             byte byteVal = to485.read();
 
-            if (byteVal == 0xEF) {
-              raw[readIndex++] = 0xEF;
+            if (byteVal == '}') {
+              raw[readIndex++] = '}';
               Serial.print("RS485 Packet: ");
               for (int i = 0; i < readIndex; i++) {
                 Serial.print(raw[i], HEX); Serial.print(" ");
